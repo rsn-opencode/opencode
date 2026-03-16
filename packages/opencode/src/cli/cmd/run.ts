@@ -379,7 +379,9 @@ export const RunCommand = cmd({
     }
 
     async function session(sdk: OpencodeClient) {
-      const baseID = args.continue ? (await sdk.session.list()).data?.find((s) => !s.parentID)?.id : args.session
+      const baseID = args.continue
+        ? (await sdk.session.list({ roots: true, source: "cli" })).data?.at(0)?.id
+        : args.session
 
       if (baseID && args.fork) {
         const forked = await sdk.session.fork({ sessionID: baseID })
@@ -389,7 +391,7 @@ export const RunCommand = cmd({
       if (baseID) return baseID
 
       const name = title()
-      const result = await sdk.session.create({ title: name, permission: rules })
+      const result = await sdk.session.create({ title: name, permission: rules, source: "cli" })
       return result.data?.id
     }
 

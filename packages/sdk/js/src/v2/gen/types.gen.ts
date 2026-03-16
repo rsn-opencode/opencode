@@ -830,6 +830,7 @@ export type Session = {
   }
   title: string
   version: string
+  source?: string
   time: {
     created: number
     updated: number
@@ -1691,6 +1692,7 @@ export type GlobalSession = {
   }
   title: string
   version: string
+  source?: string
   time: {
     created: number
     updated: number
@@ -2750,6 +2752,10 @@ export type SessionListData = {
      * Maximum number of sessions to return
      */
     limit?: number
+    /**
+     * Filter sessions by source (e.g. 'cli')
+     */
+    source?: string
   }
   url: "/session"
 }
@@ -2769,6 +2775,7 @@ export type SessionCreateData = {
     title?: string
     permission?: PermissionRuleset
     workspaceID?: string
+    source?: string
   }
   path?: never
   query?: {

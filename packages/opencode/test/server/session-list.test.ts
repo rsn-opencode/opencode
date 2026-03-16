@@ -87,4 +87,64 @@ describe("Session.list", () => {
       },
     })
   })
+
+  test("filters by source", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const cliSession = await Session.create({ title: "cli-session", source: "cli" })
+        const tuiSession = await Session.create({ title: "tui-session" })
+
+        // Filter to CLI sessions only
+        const cliSessions = [...Session.list({ source: "cli" })]
+        const cliIds = cliSessions.map((s) => s.id)
+        expect(cliIds).toContain(cliSession.id)
+        expect(cliIds).not.toContain(tuiSession.id)
+
+        // Filter to interactive (null source) sessions only
+        const tuiSessions = [...Session.list({ source: null })]
+        const tuiIds = tuiSessions.map((s) => s.id)
+        expect(tuiIds).toContain(tuiSession.id)
+        expect(tuiIds).not.toContain(cliSession.id)
+      },
+    })
+  })
+
+  test("session stores source in info", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const cliSession = await Session.create({ title: "source-test", source: "cli" })
+        expect(cliSession.source).toBe("cli")
+
+        const tuiSession = await Session.create({ title: "no-source-test" })
+        expect(tuiSession.source).toBeUndefined()
+      },
+    })
+  })
+
+  test("source filter combined with roots filter", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const cliRoot = await Session.create({ title: "cli-root", source: "cli" })
+        const cliChild = await Session.create({ title: "cli-child", source: "cli", parentID: cliRoot.id })
+        const tuiRoot = await Session.create({ title: "tui-root" })
+
+        // CLI roots only (simulates --continue in CLI mode)
+        const cliRoots = [...Session.list({ source: "cli", roots: true })]
+        const cliRootIds = cliRoots.map((s) => s.id)
+        expect(cliRootIds).toContain(cliRoot.id)
+        expect(cliRootIds).not.toContain(cliChild.id)
+        expect(cliRootIds).not.toContain(tuiRoot.id)
+
+        // Interactive roots only (simulates --continue in TUI mode)
+        const tuiRoots = [...Session.list({ source: null, roots: true })]
+        const tuiRootIds = tuiRoots.map((s) => s.id)
+        expect(tuiRootIds).toContain(tuiRoot.id)
+        expect(tuiRootIds).not.toContain(cliRoot.id)
+        expect(tuiRootIds).not.toContain(cliChild.id)
+      },
+    })
+  })
 })

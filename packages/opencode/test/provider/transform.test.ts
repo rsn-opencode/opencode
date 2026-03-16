@@ -1108,6 +1108,43 @@ describe("ProviderTransform.message - anthropic empty content filtering", () => 
       },
     }
 
+    // Claude 4.6 does not support assistant prefill, so trailing assistant
+    // messages are stripped before empty-content filtering runs.
+    // Input: [user "Hello", assistant "", assistant ["", "Answer"]]
+    // After stripTrailingAssistant: [user "Hello", assistant ""]
+    // After empty-content filter: [user "Hello"]
+    const msgs = [
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "" },
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "" },
+          { type: "text", text: "Answer" },
+        ],
+      },
+    ] as any[]
+
+    const result = ProviderTransform.message(msgs, bedrockModel, {})
+
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBe("Hello")
+  })
+
+  test("filters empty content for bedrock provider (non-4.6 model)", () => {
+    const bedrockModel = {
+      ...anthropicModel,
+      id: "amazon-bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
+      providerID: "amazon-bedrock",
+      api: {
+        id: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        url: "https://bedrock-runtime.us-east-1.amazonaws.com",
+        npm: "@ai-sdk/amazon-bedrock",
+      },
+    }
+
+    // Non-4.6 models support prefill, so trailing assistant messages are kept.
+    // Only empty-content filtering applies.
     const msgs = [
       { role: "user", content: "Hello" },
       { role: "assistant", content: "" },

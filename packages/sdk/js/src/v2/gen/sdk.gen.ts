@@ -1258,6 +1258,7 @@ export class Session2 extends HeyApiClient {
       start?: number
       search?: string
       limit?: number
+      source?: string
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1272,6 +1273,7 @@ export class Session2 extends HeyApiClient {
             { in: "query", key: "start" },
             { in: "query", key: "search" },
             { in: "query", key: "limit" },
+            { in: "query", key: "source" },
           ],
         },
       ],
@@ -1296,6 +1298,7 @@ export class Session2 extends HeyApiClient {
       title?: string
       permission?: PermissionRuleset
       workspaceID?: string
+      source?: string
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1310,6 +1313,7 @@ export class Session2 extends HeyApiClient {
             { in: "body", key: "title" },
             { in: "body", key: "permission" },
             { in: "body", key: "workspaceID" },
+            { in: "body", key: "source" },
           ],
         },
       ],

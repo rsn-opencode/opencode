@@ -9,7 +9,7 @@ import { Config } from "../config/config"
 import { Flag } from "../flag/flag"
 import { Installation } from "../installation"
 
-import { Database, NotFoundError, eq, and, or, gte, isNull, desc, like, inArray, lt } from "../storage/db"
+import { Database, NotFoundError, eq, and, or, gte, isNull, isNotNull, desc, like, inArray, lt } from "../storage/db"
 import type { SQL } from "../storage/db"
 import { SessionTable, MessageTable, PartTable } from "./session.sql"
 import { ProjectTable } from "../project/project.sql"
@@ -72,6 +72,7 @@ export namespace Session {
       parentID: row.parent_id ?? undefined,
       title: row.title,
       version: row.version,
+      source: row.source ?? undefined,
       summary,
       share,
       revert,
@@ -95,6 +96,7 @@ export namespace Session {
       directory: info.directory,
       title: info.title,
       version: info.version,
+      source: info.source,
       share_url: info.share?.url,
       summary_additions: info.summary?.additions,
       summary_deletions: info.summary?.deletions,
@@ -142,6 +144,7 @@ export namespace Session {
         .optional(),
       title: z.string(),
       version: z.string(),
+      source: z.string().optional(),
       time: z.object({
         created: z.number(),
         updated: z.number(),
@@ -223,6 +226,7 @@ export namespace Session {
         title: z.string().optional(),
         permission: Info.shape.permission,
         workspaceID: WorkspaceID.zod.optional(),
+        source: z.string().optional(),
       })
       .optional(),
     async (input) => {
@@ -232,6 +236,7 @@ export namespace Session {
         title: input?.title,
         permission: input?.permission,
         workspaceID: input?.workspaceID,
+        source: input?.source,
       })
     },
   )
@@ -301,6 +306,7 @@ export namespace Session {
     workspaceID?: WorkspaceID
     directory: string
     permission?: PermissionNext.Ruleset
+    source?: string
   }) {
     const result: Info = {
       id: SessionID.descending(input.id),
@@ -312,6 +318,7 @@ export namespace Session {
       parentID: input.parentID,
       title: input.title ?? createDefaultTitle(!!input.parentID),
       permission: input.permission,
+      source: input.source,
       time: {
         created: Date.now(),
         updated: Date.now(),
@@ -544,6 +551,7 @@ export namespace Session {
     start?: number
     search?: string
     limit?: number
+    source?: string | null
   }) {
     const project = Instance.project
     const conditions = [eq(SessionTable.project_id, project.id)]
@@ -562,6 +570,13 @@ export namespace Session {
     }
     if (input?.search) {
       conditions.push(like(SessionTable.title, `%${input.search}%`))
+    }
+    if (input?.source !== undefined) {
+      if (input.source === null) {
+        conditions.push(isNull(SessionTable.source))
+      } else {
+        conditions.push(eq(SessionTable.source, input.source))
+      }
     }
 
     const limit = input?.limit ?? 100
@@ -588,6 +603,7 @@ export namespace Session {
     search?: string
     limit?: number
     archived?: boolean
+    source?: string | null
   }) {
     const conditions: SQL[] = []
 
@@ -608,6 +624,13 @@ export namespace Session {
     }
     if (!input?.archived) {
       conditions.push(isNull(SessionTable.time_archived))
+    }
+    if (input?.source !== undefined) {
+      if (input.source === null) {
+        conditions.push(isNull(SessionTable.source))
+      } else {
+        conditions.push(eq(SessionTable.source, input.source))
+      }
     }
 
     const limit = input?.limit ?? 100

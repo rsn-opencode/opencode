@@ -11,6 +11,7 @@ import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
+import { InstructionPrompt } from "../session/instruction"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -125,6 +126,15 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       ctx.abort.addEventListener("abort", cancel)
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
       const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
+
+      const instructions = await InstructionPrompt.systemPaths()
+      if (instructions.size > 0) {
+        const names = [...instructions].map((p) => p.split("/").pop()).join(", ")
+        promptParts.push({
+          type: "text",
+          text: `IMPORTANT: You must follow all project-level instructions from your system prompt (${names}). These rules apply to this task.`,
+        })
+      }
 
       const result = await SessionPrompt.prompt({
         messageID,
